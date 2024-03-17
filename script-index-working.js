@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const newAccountBtn = document.getElementById('newAccountBtn');
     const newOrder = document.getElementById('newOrder');
     const reviewOrders = document.getElementById('reviewOrders');
-    const xqueryBtn = document.getElementById('xqueryBtn');
     const mainContent = document.getElementById('main-content');
     const title = document.getElementById('title');
 
@@ -311,37 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// execute query
-/////////////////////////////////////////////////
-xqueryBtn.addEventListener('click', async () => {
-    const queryMessage = prompt('Enter your SQL query');
-    try {
-        const response = await fetch('/execute-query', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query: queryMessage }),
-        });
-
-        if (response.ok) {
-            const queryResults = await response.json();
-            console.log('Query results:', queryResults);
-            mainContent.innerHTML = `
-            <p>Query executed successfully.</p>
-            <p>Results:</p>
-            <pre>${JSON.stringify(queryResults, null, 2)}</pre>
-        `;
-        } else {
-            console.error('Failed to execute query.');
-        }
-    }
-    catch (error) {
-        console.error('Error executing query:', error);
-    }
-});
-
-
 async function updateTotalPrice(lineNumber) {
     try {
         const quantityInput = document.getElementById(`quantity${lineNumber}`);
@@ -449,45 +417,47 @@ async function viewLinePurchases(purchaseOrderId) {
         const response = await fetch(`/view-line-purchases/${purchaseOrderId}`);
         if (response.ok) {
             const linePurchases = await response.json();
-            console.log('Line purchases retrieved successfully.', linePurchases);
 
-            // Fetch company information
-            const companyInfoResponse = await fetch(`/company-info/${purchaseOrderId}`);
-            if (companyInfoResponse.ok) {
-                const companyInfo = await companyInfoResponse.json();
-                console.log('Company information retrieved successfully.', companyInfo);
+            if (linePurchases.length > 0 && linePurchases[0].accountId) {
+                const accountId = linePurchases[0].accountId;
 
-                // Open a new window
-                const newWindow = window.open('', '_blank');
-                newWindow.document.write('<html><head><title>Invoice</title></head><body>');
+                // Fetch company information for the account
+                const companyInfoResponse = await fetch(`/company-info?accountId=${accountId}`);
+                if (companyInfoResponse.ok) {
+                    const companyInfo = await companyInfoResponse.json();
+                    console.log('Company information retrieved successfully.', companyInfo);
 
-                // Print Invoice ID
-                newWindow.document.write(`<h1>Invoice: ${purchaseOrderId}</h1>`);
+                    // Open a new window
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write('<html><head><title>Invoice</title></head><body>');
 
-                // Print company contact, name, and address
-                newWindow.document.write(`<p>Contact: ${companyInfo.contactName}</p>`);
-                newWindow.document.write(`<p>Company: ${companyInfo.companyName}</p>`);
-                newWindow.document.write(`<p>Address: ${companyInfo.streetAddress}, ${companyInfo.zipCode}</p>`);
+                    // Print Invoice ID
+                    newWindow.document.write(`<h1>Invoice: ${purchaseOrderId}</h1>`);
 
-                // Print line purchases table
-                newWindow.document.write('<table border="1">');
-                newWindow.document.write('<tr><th>Item Number</th><th>Item Name</th><th>Description</th><th>Quantity Ordered</th><th>Item Price</th><th>Total Price</th></tr>');
-                let total = 0;
-                linePurchases.forEach(linePurchase => {
-                    newWindow.document.write(`<tr><td>${linePurchase.id}</td><td>${linePurchase.name}</td><td>${linePurchase.description}</td><td>${linePurchase.quantity}</td><td>${linePurchase.price}</td><td>${linePurchase.total.toFixed(2)}</td></tr>`);
-                    total += linePurchase.total;
-                });
-                total = total.toFixed(2); // Round total to 2 decimal places
-                newWindow.document.write(`<tr><td colspan="5">Invoice Total:</td><td>${total}</td></tr>`);
-                newWindow.document.write('</table>');
+                    // Print company contact, name, and address
+                    newWindow.document.write(`<p>Contact: ${companyInfo.contactName}</p>`);
+                    newWindow.document.write(`<p>Company: ${companyInfo.companyName}</p>`);
+                    newWindow.document.write(`<p>Address: ${companyInfo.streetAddress}, ${companyInfo.zipCode}</p>`);
 
-                // Print payment message
-                newWindow.document.write('<p>Please remit payment at your earliest convenience.</p>');
+                    // Print line purchases table
+                    newWindow.document.write('<table border="1">');
+                    newWindow.document.write('<tr><th>Item</th><th>Quantity</th><th>Price</th></tr>');
+                    linePurchases.forEach(linePurchase => {
+                        newWindow.document.write(`<tr><td>${linePurchase.itemName}</td><td>${linePurchase.quantity}</td><td>${linePurchase.total}</td></tr>`);
+                    });
+                    newWindow.document.write(`<tr><td colspan="2">Total:</td><td>${linePurchases.reduce((acc, curr) => acc + parseFloat(curr.total), 0)}</td></tr>`);
+                    newWindow.document.write('</table>');
 
-                newWindow.document.write('</body></html>');
-                newWindow.document.close();
+                    // Print payment message
+                    newWindow.document.write('<p>Please remit payment at your earliest convenience.</p>');
+
+                    newWindow.document.write('</body></html>');
+                    newWindow.document.close();
+                } else {
+                    console.error('Failed to fetch company information:', companyInfoResponse.statusText);
+                }
             } else {
-                console.error('Failed to fetch company information:', companyInfoResponse.statusText);
+                console.error('No line purchases or accountId found:', linePurchases);
             }
         } else {
             console.error('Failed to fetch line purchases:', response.statusText);
@@ -496,4 +466,3 @@ async function viewLinePurchases(purchaseOrderId) {
         console.error('Error fetching line purchases:', error);
     }
 }
-

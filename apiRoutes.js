@@ -31,6 +31,7 @@ router.get('/view-purchase-orders', async (req, res) => {
 
 
 router.post('/accounts', async (req, res) => {
+    console.log(req.body);
     const { companyName, streetAddress, zipCode, contactName, contactPhone, contactEmail } = req.body;
 
     try {

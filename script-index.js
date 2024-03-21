@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <tr>
                             <td colspan="3" style="text-align: center;">
                                 <label for="accountSelect">Select Account:</label>
-                                <select class="account-select" id="accountSelect" name="accountSelect" onchange="fetchPurchaseOrders()" style="width: 100%;" value="1">
+                                <select class="account-select" id="accountSelect" name="accountSelect" onchange="fetchPurchaseOrders(),reviewTitle(this)" style="width: 100%;" value="1">
                                     <option value="">Select Account</option> <!-- Empty option -->
                                     ${accounts.map(account => `<option value="${account.id}">${account.name}</option>`).join('')}
                                 </select>
@@ -309,37 +309,42 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error loading review page:', error);
         }
     });
-});
 
-// execute query
-/////////////////////////////////////////////////
-xqueryBtn.addEventListener('click', async () => {
-    const queryMessage = prompt('Enter your SQL query');
-    try {
-        const response = await fetch('/execute-query', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query: queryMessage }),
-        });
 
-        if (response.ok) {
-            const queryResults = await response.json();
-            console.log('Query results:', queryResults);
-            mainContent.innerHTML = `
-            <p>Query executed successfully.</p>
-            <p>Results:</p>
-            <pre>${JSON.stringify(queryResults, null, 2)}</pre>
-        `;
-        } else {
-            console.error('Failed to execute query.');
+        // execute query
+    /////////////////////////////////////////////////
+    xqueryBtn.addEventListener('click', async () => {
+        const queryMessage = prompt('Enter your SQL query');
+        try {
+            const response = await fetch('/execute-query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: queryMessage }),
+            });
+
+            if (response.ok) {
+                const queryResults = await response.json();
+                console.log('Query results:', queryResults);
+                mainContent.innerHTML = `<div id="queryResults" class="query-results">
+                <p>Query executed successfully:</p>
+                <p>${queryMessage}</p>
+                <p>Results:</p>
+                <pre>${JSON.stringify(queryResults, null, 2)}</pre>
+            </div>
+            `;
+            } else {
+                console.error('Failed to execute query.');
+            }
         }
-    }
-    catch (error) {
-        console.error('Error executing query:', error);
-    }
+        catch (error) {
+            console.error('Error executing query:', error);
+        }
+    });
 });
+
+
 
 
 async function updateTotalPrice(lineNumber) {
@@ -370,6 +375,18 @@ function updateTitle(select) {
     const selectedOption = select.options[select.selectedIndex];
     console.log("Selected option:", selectedOption);
     title.innerHTML = `Create a New Purchase Order for ${selectedOption.text}`;
+
+    // Update the hidden input field with the selected account ID
+    const accountIdInput = document.getElementById('accountId');
+    accountIdInput.value = selectedOption.value;
+    console.log("Account is now:", accountIdInput.value);
+}
+
+function reviewTitle(select) {
+    console.log("Review title function called");
+    const selectedOption = select.options[select.selectedIndex];
+    console.log("Selected option:", selectedOption);
+    title.innerHTML = `Review Purchase Orders for ${selectedOption.text}`;
 
     // Update the hidden input field with the selected account ID
     const accountIdInput = document.getElementById('accountId');

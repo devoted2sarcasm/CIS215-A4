@@ -449,7 +449,7 @@ function populatePurchaseOrdersTable(purchaseOrders) {
         row.innerHTML = `
             <td>${purchaseOrder.id}</td>
             <td>${purchaseOrder.date}</td>
-            <td>${purchaseOrder.total}</td>
+            <td>${purchaseOrder.total.toFixed(2)}</td>
             <td>${paidStatus}</td>
             <td>
                 <button onclick="viewLinePurchases(${purchaseOrder.id})">Print Invoice</button>

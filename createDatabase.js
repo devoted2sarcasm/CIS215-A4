@@ -47,6 +47,20 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS "users" (
+        "id" INTEGER NOT NULL UNIQUE,
+        "username" TEXT NOT NULL UNIQUE,
+        "password" TEXT NOT NULL,
+        PRIMARY KEY("id" AUTOINCREMENT)
+    )
+  `);
+
+  db.run(`
+    INSERT OR IGNORE INTO users (id, username, password) VALUES (
+      1, "ken", "Password1"
+  )`);
+
   // db.run(`
   // INSERT INTO items (id, name, description, price) VALUES
   // (1, 'CPU', 'Runs processes on computer', 249.99),

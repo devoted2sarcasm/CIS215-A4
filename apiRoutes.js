@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const dbOperations = require('./dbOperations');
 
+router.post('/authenticate', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        console.log('Authenticating user...(apiRoutes.js)');
+        const isAuthenticated = await dbOperations.authenticateUser(username, password);
+        if (isAuthenticated) {
+            res.status(200).json({ message: 'Authentication successful' });
+        } else {
+            res.status(401).json({ error: 'Invalid credentials' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 router.get('/accountNames', async (req, res) => {
     try {
         console.log('Fetching accounts... (apiRoutes.js)');

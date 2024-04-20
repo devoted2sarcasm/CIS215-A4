@@ -2,6 +2,24 @@ const sqlite3 = require('sqlite3').verbose();
 const dbFile = 'store.db'; // Adjust the filename as needed
 const db = new sqlite3.Database(dbFile);
 
+
+// authenticate user
+function authenticateUser(username, password) {
+    return new Promise((resolve, reject) => {
+        console.log('Authenticating user...(dbOps.js)');
+        const sql = 'SELECT * FROM users WHERE username = ? and password = ?';
+        db.get(sql, [username, password], (err, row) => {
+            if (err) {
+                reject(err);
+                console.log('Error authenticating user:', err);
+            } else {
+                //resolve(row !== undefined);
+                resolve(row);
+            }
+        });
+    });
+}
+
 // Retrieve a list of all accounts
 const getAccountNames = () => {
     return new Promise((resolve, reject) => {
@@ -209,6 +227,7 @@ async function executeQuery(query) {
 
 
 module.exports = {
+    authenticateUser,
     getAccountNames,
     getItems,
     getPurchaseOrdersForAccount,

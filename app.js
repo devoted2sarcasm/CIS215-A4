@@ -47,6 +47,9 @@ const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const apiRoutes = require('./apiRoutes');
 const createDatabase = require('./createDatabase');
+const fs = require('fs');
+const { join } = require('path');
+const cron = require('node-cron');
 
 const app = express();
 const port = 8888;
@@ -59,9 +62,46 @@ const db = new sqlite3.Database(dbFile, (err) => {
     }
 });
 
+// making backups
+function createBackup() {
+    const sourcePath = join(__dirname, 'store.db');
+    const backupDir = join(__dirname, 'backups');
+    const timestamp = new Date().toISOString().replace(/:/g, '-');
+    const destPath = join(backupDir, `store_backup_${timestamp}.db`);
+
+    if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir);
+    }
+
+    fs.copyFileSync(sourcePath, destPath);
+    console.log('Backup created: ${destPath}');
+
+    cleanUpBackups(backupDir);
+}
+
+// Delete backups older than 30 days
+function cleanUpBackups(backupDir) {
+    const now = Date.now();
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+
+    fs.readdirSync(backupDir).forEach(file => {
+        const filePath = join(backupDir, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat.isFile() && stat.mtimeMs < thirtyDaysAgo) {
+            fs.unlinkSync(filePath);
+            console.log('Deleted old backup: ${filePath}');
+        }
+    });
+}
+
+// schedule a backup every hour
+cron.schedule('0 * * * *', createBackup);
+
+
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('C:\NCMC\CIS215-A4\CIS215-A4'));
+app.use(express.static(path.join(__dirname, 'C:\\NCMC\\CIS215-A4\\CIS215-A4')));
 app.use(express.json());
 app.use('/', apiRoutes);
 
@@ -72,15 +112,24 @@ app.get('/style.css', (req, res) => {
 });
 
 // Serve script-index.js with correct MIME type
-app.get('/script-index.js', (req, res) => {
+app.get('/script-login.js', (req, res) => {
     res.header('Content-Type', 'application/javascript');
-    res.sendFile(path.join(__dirname, '/script-index.js'));
+    res.sendFile(path.join(__dirname, 'script-login.js'));
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '/index.html'));
+    res.sendFile(path.join(__dirname, 'login.html'));
 });
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
+});
+
+app.get('/index', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/script-index.js', (req, res) => {
+    res.header('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'script-index.js'));
 });
